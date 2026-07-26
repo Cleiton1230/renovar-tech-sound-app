@@ -351,7 +351,7 @@ if(micBtn && micStatus){
   async function startMic(){
     try{
       micStatus.innerHTML = '<span class="rt-live-dot"></span>Pedindo permissão do microfone...';
-      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+      const stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
       const ctx = new (window.AudioContext||window.webkitAudioContext)();
       const src = ctx.createMediaStreamSource(stream);
       const analyser = ctx.createAnalyser();
@@ -822,7 +822,7 @@ document.querySelectorAll('#mix [data-preset]').forEach(function(btn){
     async function startMic(){
       statusEl.textContent = 'Pedindo acesso ao microfone...';
       try{
-        micStream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true}});
+        micStream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
       }catch(err){
         statusEl.textContent = 'Não foi possível acessar o microfone (permissão negada ou indisponível neste aparelho/navegador).';
         return;
