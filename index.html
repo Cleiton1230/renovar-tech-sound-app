@@ -918,4 +918,97 @@ document.querySelectorAll('#mix [data-preset]').forEach(function(btn){
     });
   });
 })();
-</script><script>(function(){function ready(fn){if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',fn);}else{fn();}}ready(function(){var fileInput=document.getElementById('karaokeMusicFile');var player=document.getElementById('karaokeMusicPlayer');if(!fileInput||!player)return;fileInput.addEventListener('change',function(){var file=fileInput.files&&fileInput.files[0];if(!file)return;var url=URL.createObjectURL(file);player.src=url;player.style.display='block';player.load();player.play().catch(function(){});});});})();</script></body></html>
+</script><script>(function(){function ready(fn){if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',fn);}else{fn();}}ready(function(){var fileInput=document.getElementById('karaokeMusicFile');var player=document.getElementById('karaokeMusicPlayer');if(!fileInput||!player)return;fileInput.addEventListener('change',function(){var file=fileInput.files&&fileInput.files[0];if(!file)return;var url=URL.createObjectURL(file);player.src=url;player.style.display='block';player.load();player.play().catch(function(){});});});})();</script><script>
+(function(){
+  var LOCK_TABS = ['audio','noise','karaoke','sync','hearing'];
+
+  function rtEnsureWrap(section, tabName){
+    var wrap = document.getElementById(tabName + 'RtWrap');
+    if (wrap) return wrap;
+    wrap = document.createElement('div');
+    wrap.id = tabName + 'RtWrap';
+    while (section.firstChild) { wrap.appendChild(section.firstChild); }
+    section.appendChild(wrap);
+    return wrap;
+  }
+
+  function rtGoToSub(){
+    var subBtn = document.querySelector('.tabbtn[data-tab="sub"]');
+    if (subBtn) subBtn.click();
+  }
+
+  function rtApplyLock(tabName, locked, reason){
+    var section = document.getElementById(tabName);
+    if (!section) return;
+    var wrap = rtEnsureWrap(section, tabName);
+    var overlay = document.getElementById(tabName + 'RtLock');
+    if (locked){
+      wrap.style.display = 'none';
+      if (!overlay){
+        overlay = document.createElement('div');
+        overlay.id = tabName + 'RtLock';
+        overlay.style.cssText = 'padding:28px 20px;background:#f4f6f6;border-radius:10px;text-align:center;border:1px solid #e0e0e0;';
+        overlay.innerHTML = '<p style="font-size:20px;margin:0 0 10px 0;">🔒</p>' +
+          '<p style="font-size:18px;font-weight:700;color:#497073;margin:0 0 10px 0;">Assine para continuar usando</p>' +
+          '<p id="' + tabName + 'RtLockMsg" style="font-size:14px;color:#333;margin:0 0 16px 0;">Faca login e assine o Plano Premium para liberar esta ferramenta.</p>' +
+          '<button type="button" style="background:#ff3300;color:#fff;border:none;padding:12px 22px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;">Ver plano e assinar</button>';
+        section.insertBefore(overlay, wrap);
+        overlay.querySelector('button').addEventListener('click', rtGoToSub);
+      }
+      var msg = document.getElementById(tabName + 'RtLockMsg');
+      if (msg && reason) msg.textContent = reason;
+      overlay.style.display = '';
+    } else {
+      wrap.style.display = '';
+      if (overlay) overlay.style.display = 'none';
+    }
+  }
+
+  async function rtCheckAccessGate(){
+    var locked = true;
+    var reason = 'Faca login e assine o Plano Premium para liberar esta ferramenta.';
+    try{
+      if (window.rtSb && window.rtSb.auth){
+        var sessionRes = await window.rtSb.auth.getSession();
+        var session = sessionRes && sessionRes.data ? sessionRes.data.session : null;
+        if (session){
+          var profRes = await window.rtSb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+          var profile = profRes ? profRes.data : null;
+          if (profile){
+            if (profile.plan_status === 'active'){
+              locked = false;
+            } else if (profile.trial_ends_at){
+              var end = new Date(profile.trial_ends_at);
+              if (end > new Date()){
+                locked = false;
+              } else {
+                reason = 'Seu periodo gratis terminou. Assine o Plano Premium por R$ 19,90/mes para continuar usando.';
+              }
+            }
+          }
+        }
+      }
+    } catch(e){ console.error('rtCheckAccessGate', e); }
+    LOCK_TABS.forEach(function(t){ rtApplyLock(t, locked, reason); });
+  }
+
+  window.rtCheckAccessGate = rtCheckAccessGate;
+
+  function rtInit(){
+    rtCheckAccessGate();
+    document.querySelectorAll('.tabbtn').forEach(function(btn){
+      btn.addEventListener('click', function(){ setTimeout(rtCheckAccessGate, 60); });
+    });
+    if (window.rtSb && window.rtSb.auth && window.rtSb.auth.onAuthStateChange){
+      window.rtSb.auth.onAuthStateChange(function(){ setTimeout(rtCheckAccessGate, 200); });
+    }
+    setInterval(rtCheckAccessGate, 20000);
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', rtInit);
+  } else {
+    rtInit();
+  }
+})();
+</script></body></html>
