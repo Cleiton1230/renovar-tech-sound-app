@@ -281,7 +281,7 @@ if (subBtn) subBtn.addEventListener('click', async function(){
   if (!session){ if (subStatus) subStatus.textContent = 'Faca login primeiro.'; return; }
   if (subStatus) subStatus.textContent = 'Abrindo pagamento seguro...';
   try {
-    const res = await fetch('https://zznuhmskgruandrjjncq.supabase.co/functions/v1/create-payment', {
+    const res = await fetch('https://zznuhmskgruandrjjncq.supabase.co/functions/v1/create-subscription', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
